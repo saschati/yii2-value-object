@@ -1,0 +1,24 @@
+{
+    "name": "saschati/yii2-value-object",
+    "description": "This extension will help you work with your fields in the database as objects by distilling them from scalar values ​​into objects and vice versa.",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension","value object","data mapper","convert types"],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Olexander Grigorchyk",
+            "email": "saschatimail@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4.0",
+        "yiisoft/yii2": "~2.0.0",
+        "marc-mabe/php-enum": "^4.2",
+        "ramsey/uuid": "^3.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Saschati\\ValueObject\\": "src/"
+        }
+    }
+}
