@@ -8,6 +8,7 @@
 namespace Saschati\ValueObject\Behaviors;
 
 use InvalidArgumentException;
+use Saschati\ValueObject\Helpers\Special;
 use Saschati\ValueObject\Types\Specials;
 use Saschati\ValueObject\Types\Specials\Interfaces\SpecialInterface;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
@@ -16,47 +17,76 @@ use yii\db\ActiveRecord;
 use yii\helpers\ArrayHelper;
 
 /**
+ * This behavior converts data from a database to custom types or value object
+ * for easy use of classes instead of scalar types.
+ *
  * Class ValueObjectBehavior
  */
 class ValueObjectBehavior extends Behavior
 {
+
+    /**
+     * A set of pre-harvested types, such as boolean, timestamp, etc.
+     */
     private const SPECIAL_TYPE = [
-        'boolean'          => Specials\BooleanType::class,
-        'integer'          => Specials\IntegerType::class,
-        'string'           => Specials\StringType::class,
-        'float'            => Specials\FloatType::class,
-        'json'             => Specials\JsonType::class,
-        'timestamp'        => Specials\TimestampType::class,
-        'timestampInteger' => Specials\TimestampIntegerType::class,
+        Special::BOOLEAN_TYPE           => Specials\BooleanType::class,
+        Special::INTEGER_TYPE           => Specials\IntegerType::class,
+        Special::STRING_TYPE            => Specials\StringType::class,
+        Special::FLOAT_TYPE             => Specials\FloatType::class,
+        Special::JSON_TYPE              => Specials\JsonType::class,
+        Special::TIMESTAMP_TYPE         => Specials\TimestampType::class,
+        Special::TIMESTAMP_INTEGER_TYPE => Specials\TimestampIntegerType::class,
+        Special::SERIALIZE_TYPE         => Specials\SerializedType::class,
     ];
 
     /**
+     * List of custom lightweight types like 'boolean' => BooleanType::class
+     * In the future, it is transferred to the settings in the framework itself.
+     *
      * @var SpecialInterface[]
      */
     public array $customSpecialTypes = [];
 
     /**
+     * Mandatory field for the component in which you want to specify the dependencies of the model fields to its value
+     * 'attributes' => [
+     *    'id'     => IdType::class,
+     *    'email'  => EmailAddress::class,
+     *    'status' => 'boolean',
+     * ].
+     *
      * @var ValueObjectInterface[]
      */
-    public array $attribute = [];
+    public array $attributes = [];
 
     /**
+     * The private field which combines all user and default types of a plug-in
+     * thereby unites them in a uniform array from which values ​​will be taken further.
+     *
      * @var SpecialInterface[]
      */
     private array $specialTypes = [];
 
     /**
+     * This field serves as the content of all fields of special types
+     * of the model which uses it with value 'attribute' => 'Type'.
+     *
      * @var array[]
      */
     private array $attributeSpecialTypes = [];
 
     /**
+     * This field serves as the content of all fields of the value object
+     * model that uses it with the value 'attribute' => 'Type'.
+     *
      * @var array[]
      */
     private array $attributeValueObjects = [];
 
 
     /**
+     * Array for event signature to be used
+     *
      * @return array
      */
     public function events(): array
@@ -69,6 +99,9 @@ class ValueObjectBehavior extends Behavior
     }
 
     /**
+     * The basic data mapper method which develops and forms an array with all corresponding types,
+     * all types which do not imitate the main interfaces, are simply passed.
+     *
      * @return void
      */
     public function cast()
@@ -78,8 +111,7 @@ class ValueObjectBehavior extends Behavior
          */
         $model = $this->owner;
 
-        $this->specialTypes          = $this->combineSpecialTypes();
-        $this->attributeSpecialTypes = array_intersect($this->attribute, array_keys($this->specialTypes));
+        $this->distributeTypes();
 
         if ($this->attributeSpecialTypes !== []) {
             foreach ($this->attributeSpecialTypes as $attribute => $type) {
@@ -87,19 +119,20 @@ class ValueObjectBehavior extends Behavior
             }
         }
 
-        $this->attributeValueObjects = array_diff_key($this->attribute, $this->attributeSpecialTypes);
-
         if ($this->attributeValueObjects !== []) {
             foreach ($this->attributeValueObjects as $attribute => $type) {
-                $model->{$attribute} = $this->castValueObjectAttribute($attribute, $model->{$attribute});
+                $model->{$attribute} = $this->castValueObjectAttribute($type, $model->{$attribute});
             }
         }
     }
 
     /**
+     * This method normalizes all the data to translate them into a database,
+     * performs the appropriate methods for this in the boiler in the type interfaces.
+     *
      * @return void
      */
-    public function normalize()
+    public function normalize(): void
     {
         /**
          * @var ActiveRecord $model
@@ -120,36 +153,77 @@ class ValueObjectBehavior extends Behavior
     }
 
     /**
-     * @param mixed $key
-     * @param mixed $value
+     * This method splits and the group has data and pearl types
+     * from the attributes field into two fields with ValueObject and SpecialTypes.
+     *
+     * @return void
+     */
+    protected function distributeTypes(): void
+    {
+        $this->specialTypes = $this->combineSpecialTypes();
+
+        foreach ($this->attributes as $attribute => $type) {
+            if (class_exists($type) === true) {
+                if (in_array(SpecialInterface::class, class_implements($type)) === true) {
+                    $this->attributeSpecialTypes[$attribute] = $type;
+
+                    continue;
+                }
+
+                if (in_array(ValueObjectInterface::class, class_implements($type)) === true) {
+                    $this->attributeValueObjects[$attribute] = $type;
+
+                    continue;
+                }
+            }
+
+            if (isset($this->specialTypes[$type]) === true) {
+                if (in_array(SpecialInterface::class, class_implements($this->specialTypes[$type])) === true) {
+                    $this->attributeSpecialTypes[$attribute] = $this->specialTypes[$type];
+                }
+            }
+        }
+    }
+
+    /**
+     * Scalar type casting is performed in value object.
+     *
+     * @param ValueObjectInterface|string $castToClass
+     * @param mixed                       $value
      *
      * @return mixed
      *
      * @throws InvalidArgumentException
      */
-    protected function castValueObjectAttribute($key, $value)
+    protected function castValueObjectAttribute($castToClass, $value)
     {
         if (true === empty($value)) {
             return null;
         }
 
-        $castToClass = $this->getValueObjectCastType($key);
-
         if (null === $castToClass) {
             return $value;
         }
 
-        if (false === in_array(ValueObjectInterface::class, class_implements($castToClass), true)) {
-            throw new InvalidArgumentException($castToClass . ' not implement ' . ValueObjectInterface::class);
-        }
-
-        /**
-         * @var $castToClass ValueObjectInterface
-         */
         return $castToClass::convertToObjectValue($value);
     }
 
     /**
+     * Leads the castration of the scalar type in a special type.
+     *
+     * @param string|SpecialInterface $type
+     * @param mixed                   $value
+     *
+     * @return mixed
+     */
+    protected function castSpecialAttribute($type, $value)
+    {
+        return $type::convertToPhpValue($value);
+    }
+
+    /**
+     * Normalization of value object in scalar type is performed.
+     *
      * @param ValueObjectInterface|null $valueObject
      *
      * @return mixed
@@ -162,50 +236,21 @@ class ValueObjectBehavior extends Behavior
     }
 
     /**
-     * @param string|SpecialInterface $type
+     * Normalization of special types in scalar type is carried out.
+     *
+     * @param SpecialInterface|string $type
      * @param mixed                   $value
      *
      * @return mixed
      */
-    protected function castSpecialAttribute(string $type, $value)
+    protected function normalizeSpecialAttribute(string $type, $value)
     {
-        if (class_exists($type) === true && $type instanceof SpecialInterface) {
-            return $type::convertToPhpValue($value);
-        }
-
-        if (isset($this->specialTypes[$type]) === false && $this->specialTypes[$type] instanceof SpecialInterface) {
-            throw new InvalidArgumentException("Type $type not found!");
-        }
-
-        return $this->specialTypes[$type]::convertToPhpValue($value);
+        return $type::convertToDatabaseValue($value);
     }
 
     /**
-     * @param string $attribute
-     * @param mixed  $value
+     * Combines custom types and default special types.
      *
-     * @return mixed
-     */
-    protected function normalizeSpecialAttribute(string $attribute, $value)
-    {
-        return $this->specialTypes[$attribute]::convertToDatabaseValue($value);
-    }
-
-    /**
-     * @param mixed $key
-     *
-     * @return mixed|null
-     */
-    private function getValueObjectCastType($key)
-    {
-        if (true === isset($this->attribute[$key]) && true === class_exists($this->attribute[$key])) {
-            return $this->attribute[$key];
-        }
-
-        return null;
-    }
-
-    /**
      * @return SpecialInterface[]
      */
     protected function combineSpecialTypes(): array

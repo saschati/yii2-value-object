@@ -11,32 +11,45 @@ use RuntimeException;
 use Saschati\ValueObject\Types\Specials\Interfaces\SpecialInterface;
 
 /**
- * Class JsonType
+ * Class ClassConservativeType
  */
-class JsonType implements SpecialInterface
+class SerializedType implements SpecialInterface
 {
 
 
     /**
      * @param mixed $value
      *
-     * @return array
+     * @return mixed
      */
     public static function convertToPhpValue($value)
     {
-        $value = json_decode($value, true);
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_resource($value)) {
+            $value = stream_get_contents($value);
+        }
+
+        $value = (string) $value;
+
+        /**
+         * @var array $val
+         */
+        $val = unserialize(quoted_printable_decode((string) json_decode($value, true)));
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new RuntimeException(json_last_error_msg());
         }
 
-        return $value;
+        return $val;
     }
 
     /**
      * @param $value
      *
-     * @return string
+     * @return mixed
      */
     public static function convertToDatabaseValue($value)
     {
@@ -44,7 +57,7 @@ class JsonType implements SpecialInterface
             return null;
         }
 
-        $encoded = json_encode($value);
+        $encoded = json_encode(quoted_printable_encode(serialize($value)));
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new RuntimeException(json_last_error_msg());

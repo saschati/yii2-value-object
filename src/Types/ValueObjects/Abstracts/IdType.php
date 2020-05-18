@@ -7,6 +7,7 @@
 
 namespace Saschati\ValueObject\Types\ValueObjects\Abstracts;
 
+use Exception;
 use Ramsey\Uuid\Uuid as BaseUuid;
 
 /**
@@ -18,7 +19,7 @@ abstract class IdType extends NativeType
     /**
      * @return static
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public static function new()
     {

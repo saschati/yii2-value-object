@@ -15,6 +15,8 @@ interface SpecialInterface
 
 
     /**
+     * Named constructor to make a Special Type from a native value.
+     *
      * @param $value
      *
      * @return mixed
@@ -23,6 +25,8 @@ interface SpecialInterface
 
 
     /**
+     * Returns the native value of this Special Type.
+     *
      * @param $value
      *
      * @return mixed

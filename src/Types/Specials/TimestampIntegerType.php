@@ -31,7 +31,7 @@ class TimestampIntegerType implements SpecialInterface
             return null;
         }
 
-        return (new \DateTime())->setTimestamp($value);
+        return (new DateTime())->setTimestamp($value);
     }
 
     /**
