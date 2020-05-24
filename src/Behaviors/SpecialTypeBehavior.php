@@ -115,6 +115,8 @@ class SpecialTypeBehavior extends Behavior
          */
         $model = $this->owner;
 
+        $this->distributeTypes();
+
         if ($this->attributeSpecialTypes !== []) {
             foreach ($this->attributeSpecialTypes as $attribute => $type) {
                 $model->{$attribute} = $this->normalizeSpecialAttribute($type, $model->{$attribute});

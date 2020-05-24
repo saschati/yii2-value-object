@@ -91,6 +91,8 @@ class ValueObjectBehavior extends Behavior
          */
         $model = $this->owner;
 
+        $this->distributeTypes();
+
         if ($this->attributeValueObjects !== []) {
             foreach ($this->attributeValueObjects as $attribute => $type) {
                 $model->{$attribute} = $this->normalizeValueObjectAttribute($model->{$attribute});

@@ -84,8 +84,6 @@ class MixedTypeBehavior extends Behavior
     {
         return [
             ActiveRecord::EVENT_AFTER_FIND    => 'cast',
-            ActiveRecord::EVENT_AFTER_INSERT  => 'afterSave',
-            ActiveRecord::EVENT_AFTER_UPDATE  => 'afterSave',
             ActiveRecord::EVENT_BEFORE_INSERT => 'normalize',
             ActiveRecord::EVENT_BEFORE_UPDATE => 'normalize',
         ];
@@ -131,6 +129,8 @@ class MixedTypeBehavior extends Behavior
          * @var ActiveRecord $model
          */
         $model = $this->owner;
+
+        $this->distributeTypes();
 
         if ($this->attributeValueObjects !== []) {
             foreach ($this->attributeValueObjects as $attribute => $type) {
