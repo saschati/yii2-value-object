@@ -7,6 +7,8 @@
 
 namespace Saschati\ValueObject\Types\ValueObjects;
 
+use Exception;
+use Ramsey\Uuid\Uuid as BaseUuid;
 use Saschati\ValueObject\Types\ValueObjects\Abstracts\IdType;
 use Webmozart\Assert\Assert;
 
@@ -16,10 +18,26 @@ use Webmozart\Assert\Assert;
 class Id extends IdType
 {
 
-    public function __construct($value)
+
+    /**
+     * Id constructor.
+     *
+     * @param string $value
+     */
+    public function __construct(string $value)
     {
         Assert::uuid($value);
 
         parent::__construct($value);
+    }
+
+    /**
+     * @return static
+     *
+     * @throws Exception
+     */
+    public static function new()
+    {
+        return new static(BaseUuid::uuid4()->toString());
     }
 }

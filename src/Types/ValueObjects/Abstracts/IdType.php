@@ -7,22 +7,15 @@
 
 namespace Saschati\ValueObject\Types\ValueObjects\Abstracts;
 
-use Exception;
-use Ramsey\Uuid\Uuid as BaseUuid;
-
 /**
  * Class Id
  */
 abstract class IdType extends NativeType
 {
 
+
     /**
      * @return static
-     *
-     * @throws Exception
      */
-    public static function new()
-    {
-        return new static(BaseUuid::uuid4()->toString());
-    }
+    public abstract static function new();
 }
