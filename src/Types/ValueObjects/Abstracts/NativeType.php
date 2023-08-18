@@ -1,12 +1,13 @@
 <?php
 /**
- * PHP version 7.4
+ * PHP version 8.1
  *
  * @package Saschati\ValueObject\Types\ValueObjects\Abstracts
  */
 
 namespace Saschati\ValueObject\Types\ValueObjects\Abstracts;
 
+use InvalidArgumentException;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 
 /**
@@ -14,7 +15,6 @@ use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
  */
 abstract class NativeType implements ValueObjectInterface
 {
-
     /**
      * @var mixed
      */
@@ -26,12 +26,12 @@ abstract class NativeType implements ValueObjectInterface
      *
      * @param mixed $value
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function __construct($value)
+    public function __construct(mixed $value)
     {
-        if (true === empty($value)) {
-            throw new \InvalidArgumentException('Empty value is not allow.');
+        if (empty($value) === true) {
+            throw new InvalidArgumentException('Empty value is not allow.');
         }
 
         $this->value = $value;
@@ -44,7 +44,7 @@ abstract class NativeType implements ValueObjectInterface
      *
      * @return mixed
      */
-    public static function convertToObjectValue($value)
+    public static function convertToObjectValue(mixed $value): static
     {
         return new static($value);
     }
@@ -54,7 +54,7 @@ abstract class NativeType implements ValueObjectInterface
      *
      * @return mixed
      */
-    public function convertToDatabaseValue()
+    public function convertToDatabaseValue(): mixed
     {
         return $this->value;
     }
@@ -64,7 +64,7 @@ abstract class NativeType implements ValueObjectInterface
      *
      * @return mixed
      */
-    public function getValue()
+    public function getValue(): mixed
     {
         return $this->value;
     }

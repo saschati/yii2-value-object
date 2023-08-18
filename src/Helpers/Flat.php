@@ -1,6 +1,6 @@
 <?php
 /**
- * PHP version 7.4
+ * PHP version 8.1
  *
  * @package Saschati\ValueObject\Helpers
  */
@@ -8,11 +8,10 @@
 namespace Saschati\ValueObject\Helpers;
 
 /**
- * Class Special
+ * Class Flat
  */
-class Special
+class Flat
 {
-
     public const BOOLEAN_TYPE           = 'boolean';
     public const INTEGER_TYPE           = 'integer';
     public const STRING_TYPE            = 'string';

@@ -15,14 +15,12 @@ use MabeEnum\Enum as BaseEnum;
  */
 abstract class EnumType extends BaseEnum implements ValueObjectInterface
 {
-
-
     /**
      * @param mixed $value
      *
-     * @return EnumType
+     * @return static
      */
-    public static function convertToObjectValue($value)
+    public static function convertToObjectValue($value): static
     {
         return static::get($value);
     }
@@ -30,17 +28,17 @@ abstract class EnumType extends BaseEnum implements ValueObjectInterface
     /**
      * @return mixed
      */
-    public function convertToDatabaseValue()
+    public function convertToDatabaseValue(): mixed
     {
         return $this->getValue();
     }
 
     /**
-     * @param $value
+     * @param mixed $value
      *
      * @return BaseEnum
      */
-    public static function set($value)
+    public static function set(mixed $value)
     {
         return parent::get($value);
     }

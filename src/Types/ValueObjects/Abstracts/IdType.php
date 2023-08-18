@@ -1,6 +1,6 @@
 <?php
 /**
- * PHP version 7.4
+ * PHP version 8.1
  *
  * @package Saschati\ValueObject\Types\ValueObjects\Abstracts
  */
@@ -12,10 +12,8 @@ namespace Saschati\ValueObject\Types\ValueObjects\Abstracts;
  */
 abstract class IdType extends NativeType
 {
-
-
     /**
      * @return static
      */
-    public abstract static function new();
+    public abstract static function new(): static;
 }

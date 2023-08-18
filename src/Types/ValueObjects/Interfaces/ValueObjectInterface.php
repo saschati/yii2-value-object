@@ -1,6 +1,6 @@
 <?php
 /**
- * PHP version 7.4
+ * PHP version 8.1
  *
  * @package Saschati\ValueObject\Types\Interfaces
  */
@@ -12,23 +12,21 @@ namespace Saschati\ValueObject\Types\ValueObjects\Interfaces;
  */
 interface ValueObjectInterface
 {
-
-
     /**
      * Named constructor to make a Value Object from a native value.
      *
      * @param mixed $value
      *
-     * @return mixed
+     * @return static|null
      */
-    public static function convertToObjectValue($value);
+    public static function convertToObjectValue(mixed $value): ?static;
 
     /**
      * Returns the native value of this Value Object.
      *
      * @return mixed
      */
-    public function convertToDatabaseValue();
+    public function convertToDatabaseValue(): mixed;
 
     /**
      * Returns the string representation of this Value Object.
