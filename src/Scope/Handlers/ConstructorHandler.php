@@ -8,12 +8,22 @@
 namespace Saschati\ValueObject\Scope\Handlers;
 
 use Closure;
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use yii\db\ActiveRecordInterface;
+
+use function array_map;
 
 /**
  * Class ConstructorHandler
  *
+ * This handler creates an object with constructor values that can be properties of the ActiveRecord model,
+ * a "resolver" must be provided for data normalization.
+ *
+ * @method void resolver(object|null $type, ActiveRecordInterface $model, AbstractHandler $handler) A mandatory
+ * function that must map values from the type to the ActiveRecord model.
+ * @method boolean nullIf(ActiveRecordInterface $model, AbstractHandler $handler) If the method returns true then null
+ * will be passed to the specified property.
+ *
+ * Example:
  * 'attribute' => [
  *    'scope'  => TypeScope::CONSTRUCTOR,
  *    'type'   => SomeClass::class,
@@ -23,13 +33,16 @@ use yii\db\ActiveRecordInterface;
  *       'no attribute value',
  *       ...
  *    ],
- *    'resolver' => static function (SomeEntity $type, ActiveRecord $model) {
+ *    'resolver' => static function (SomeEntity|null $type, ActiveRecordInterface $model, ValueInterface $handler) {
  *        $model->attribute1 = $type->getProperty1Value();
  *        ...
  *    },
+ *    'nullIf' => static function (ActiveRecordInterface $model, ValueInterface $handler) {
+ *        return $model->attribute1 === null;
+ *    },
  * ]
  */
-class ConstructorHandler implements HandlerInterface
+class ConstructorHandler extends AbstractHandler
 {
     /**
      * @param ActiveRecordInterface $model
@@ -37,6 +50,7 @@ class ConstructorHandler implements HandlerInterface
      * @param string                $class
      * @param array                 $params
      * @param Closure               $resolver
+     * @param Closure|null          $nullIf
      */
     public function __construct(
         private readonly ActiveRecordInterface $model,
@@ -44,6 +58,7 @@ class ConstructorHandler implements HandlerInterface
         private readonly string $class,
         private readonly array $params,
         private readonly Closure $resolver,
+        private readonly ?Closure $nullIf = null,
     ) {
     }
 
@@ -52,12 +67,23 @@ class ConstructorHandler implements HandlerInterface
      */
     public function cast(): void
     {
-        $class = $this->class;
-        $model = $this->model;
+        $class  = $this->class;
+        $model  = $this->model;
+        $nullIf = $this->nullIf;
+
+        if ($nullIf !== null && $nullIf($model, $this) === true) {
+            $this->setValue(null);
+
+            return;
+        }
 
         $instance = new $class(
             ...array_map(
-                static function (string $attribute) use ($model) {
+                function (string $attribute) use ($model) {
+                    if ($this->isVirtual($attribute) === true) {
+                        return $this->bug->get($attribute);
+                    }
+
                     if ($model->hasAttribute($attribute) === false) {
                         return $attribute;
                     }
@@ -68,7 +94,7 @@ class ConstructorHandler implements HandlerInterface
             )
         );
 
-        $this->model->{$this->attribute} = $instance;
+        $this->setValue($instance);
     }
 
     /**
@@ -78,6 +104,22 @@ class ConstructorHandler implements HandlerInterface
     {
         $resolver = $this->resolver;
 
-        $resolver($this->model->{$this->attribute}, $this->model);
+        $resolver($this->getValue(), $this->getModel(), $this);
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return $this->attribute;
     }
 }

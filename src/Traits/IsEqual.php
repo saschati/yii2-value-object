@@ -7,8 +7,14 @@
 
 namespace Saschati\ValueObject\Traits;
 
+use Saschati\ValueObject\Types\ValueObjects\Abstracts\NativeType;
+
 /**
  * Class IsEqual
+ *
+ * Comparison of two Native types.
+ *
+ * @see NativeType::getValue()
  */
 trait IsEqual
 {

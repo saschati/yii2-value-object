@@ -11,6 +11,8 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class StringType
+ *
+ * Converting a value to a string.
  */
 class StringType implements FlatInterface
 {

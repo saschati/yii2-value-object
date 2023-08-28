@@ -8,14 +8,28 @@
 namespace Saschati\ValueObject\Scope\Handlers;
 
 use Closure;
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecordInterface;
 
+use function array_combine;
+use function array_keys;
+use function array_map;
+
 /**
  * Class YiiCreateHandler
  *
+ * This handler works according to the principle of ConstructorHandler, but with the difference
+ * that it creates an instance through the Yii::create() factory.
+ *
+ * @see Yii::createObject()
+ *
+ * @method void resolver(object|null $type, ActiveRecordInterface $model, AbstractHandler $handler) A mandatory
+ * function that must map values from the type to the ActiveRecord model.
+ * @method boolean nullIf(ActiveRecordInterface $model, AbstractHandler $handler) If the method returns true then null
+ * will be passed to the specified property.
+ *
+ * Example:
  * 'attribute' => [
  *    'scope'  => TypeScope::YII_CREATE,
  *    'type'   => SomeClass::class,
@@ -25,13 +39,16 @@ use yii\db\ActiveRecordInterface;
  *       'constructParam3' => 'no attribute value',
  *       ...
  *    ],
- *    'resolver' => static function (SomeEntity $type, ActiveRecord $model) {
+ *    'resolver' => static function (?SomeEntity $type, ActiveRecordInterface $model, ValueInterface $handler) {
  *        $model->attribute1 = $type->getProperty1Value();
  *        ...
  *    },
+ *    'nullIf' => static function (ActiveRecordInterface $model, ValueInterface $handler) {
+ *        return $model->attribute1 === null;
+ *    },
  * ]
  */
-class YiiCreateHandler implements HandlerInterface
+class YiiCreateHandler extends AbstractHandler
 {
     /**
      * @param ActiveRecordInterface $model
@@ -39,6 +56,7 @@ class YiiCreateHandler implements HandlerInterface
      * @param string                $class
      * @param array                 $params
      * @param Closure               $resolver
+     * @param Closure|null          $nullIf
      */
     public function __construct(
         private readonly ActiveRecordInterface $model,
@@ -46,6 +64,7 @@ class YiiCreateHandler implements HandlerInterface
         private readonly string $class,
         private readonly array $params,
         private readonly Closure $resolver,
+        private readonly ?Closure $nullIf = null,
     ) {
     }
 
@@ -56,15 +75,26 @@ class YiiCreateHandler implements HandlerInterface
      */
     public function cast(): void
     {
-        $class = $this->class;
-        $model = $this->model;
+        $class  = $this->class;
+        $nullIf = $this->nullIf;
+        $model  = $this->getModel();
+
+        if ($nullIf !== null && $nullIf($model, $this) === true) {
+            $this->setValue(null);
+
+            return;
+        }
 
         $keys = array_keys($this->params);
 
         $params = array_combine(
             $keys,
             array_map(
-                static function (string $attribute) use ($model) {
+                function (string $attribute) use ($model) {
+                    if ($this->isVirtual($attribute) === true) {
+                        return $this->bug->get($attribute);
+                    }
+
                     if ($model->hasAttribute($attribute) === false) {
                         return $attribute;
                     }
@@ -75,7 +105,7 @@ class YiiCreateHandler implements HandlerInterface
             )
         );
 
-        $this->model->{$this->attribute} = Yii::createObject($class, $params);
+        $this->setValue(Yii::createObject($class, $params));
     }
 
     /**
@@ -85,6 +115,22 @@ class YiiCreateHandler implements HandlerInterface
     {
         $resolver = $this->resolver;
 
-        $resolver($this->model->{$this->attribute}, $this->model);
+        $resolver($this->getValue(), $this->getModel(), $this);
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return $this->attribute;
     }
 }

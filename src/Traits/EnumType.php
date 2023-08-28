@@ -11,13 +11,15 @@ namespace Saschati\ValueObject\Traits;
 
 /**
  * Trait EnumType
+ *
+ * Support of enum type in PHP 8.1 as Value Object.
  */
 trait EnumType
 {
     /**
      * @return array
      */
-    public static function names(): array
+    public static function getNames(): array
     {
         return array_column(self::cases(), 'name');
     }
@@ -25,7 +27,7 @@ trait EnumType
     /**
      * @return array
      */
-    public static function values(): array
+    public static function getValues(): array
     {
         return array_column(self::cases(), 'value');
     }
@@ -33,9 +35,9 @@ trait EnumType
     /**
      * @return array
      */
-    public static function array(): array
+    public static function toArray(): array
     {
-        return array_combine(self::values(), self::names());
+        return array_combine(self::getValues(), self::getNames());
     }
 
     /**

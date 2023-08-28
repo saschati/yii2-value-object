@@ -10,6 +10,8 @@ namespace Saschati\ValueObject\Behaviors;
 use InvalidArgumentException;
 use Saschati\ValueObject\Helpers\Flat;
 use Saschati\ValueObject\Helpers\TypeScope;
+use Saschati\ValueObject\Scope\Bugs\Interfaces\BugInterface;
+use Saschati\ValueObject\Scope\Bugs\VirtualPropertyBug;
 use Saschati\ValueObject\Scope\Handlers\ConstructorHandler;
 use Saschati\ValueObject\Scope\Handlers\EachHandler;
 use Saschati\ValueObject\Scope\Handlers\EmbeddedHandler;
@@ -21,9 +23,19 @@ use Saschati\ValueObject\Scope\Handlers\YiiCreateHandler;
 use Saschati\ValueObject\Types\Flats;
 use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
+use Yii;
 use yii\base\Behavior;
+use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
+
+use function array_key_exists;
+use function array_reverse;
+use function class_exists;
+use function class_implements;
+use function in_array;
+use function is_array;
+use function is_callable;
 
 /**
  * This behavior converts data from a database to custom types or value object
@@ -49,6 +61,7 @@ class ORMBehavior extends Behavior
 
     /**
      * Mandatory field for the component in which you want to specify the dependencies of the model fields to its value
+     *
      * 'attributes' => [
      *    'id'     => IdType::class,
      *    'email'  => EmailAddress::class,
@@ -56,12 +69,12 @@ class ORMBehavior extends Behavior
      *    'name'   => [
      *        'scope'  => TypeScope::EMBEDDED,
      *        'type'   => SomeEmbeddedClass::class,
-     *        'mapper' => [
+     *        'map' => [
      *           'firstName'  => 'first_name',
      *           'lastName'   => 'last_name',
      *           'middleName' => 'middle_name'
      *        ]
-     *    ]
+     *    ],
      * ].
      *
      * @var ValueObjectInterface[]
@@ -69,12 +82,12 @@ class ORMBehavior extends Behavior
     public array $attributes = [];
 
     /**
-     * The private field which combines all user and default types of a plug-in
-     * thereby unites them in a uniform array from which values ​​will be taken further.
+     * The public field which combines all user and default types of a plug-in
+     * thereby unites them in a uniform array from which values will be taken further.
      *
      * @var FlatInterface[]
      */
-    private array $specialTypes = [];
+    public array $specialTypes = [];
 
     /**
      * @var HandlerInterface[]
@@ -87,10 +100,25 @@ class ORMBehavior extends Behavior
     protected bool $isDistributeTypes = false;
 
     /**
+     * @var VirtualPropertyBug
+     */
+    protected BugInterface $virtualPropertyBug;
+
+    /**
      * @var array
      */
     protected static array $implements = [];
 
+
+    /**
+     * @return void
+     */
+    public function init(): void
+    {
+        parent::init();
+
+        $this->virtualPropertyBug = new VirtualPropertyBug();
+    }
 
     /**
      * Array for event signature to be used
@@ -113,18 +141,23 @@ class ORMBehavior extends Behavior
      * all types which do not imitate the main interfaces, are simply passed.
      *
      * @return void
+     *
+     * @throws InvalidConfigException
      */
     public function cast(): void
     {
         $this->distributeTypes();
 
         foreach ($this->handlers as $handler) {
+            $handler->setBug($this->virtualPropertyBug);
             $handler->cast();
         }
     }
 
     /**
      * @return void
+     *
+     * @throws InvalidConfigException
      */
     public function recast(): void
     {
@@ -141,6 +174,8 @@ class ORMBehavior extends Behavior
      * performs the appropriate methods for this in the boiler in the type interfaces.
      *
      * @return void
+     *
+     * @throws InvalidConfigException
      */
     public function normalize(): void
     {
@@ -148,6 +183,7 @@ class ORMBehavior extends Behavior
 
         $handlers = $this->handlers;
         foreach (array_reverse($handlers) as $handler) {
+            $handler->setBug($this->virtualPropertyBug);
             $handler->normalize();
         }
     }
@@ -159,6 +195,7 @@ class ORMBehavior extends Behavior
      * @return void
      *
      * @throws InvalidArgumentException
+     * @throws InvalidConfigException
      */
     protected function distributeTypes(): void
     {
@@ -169,7 +206,10 @@ class ORMBehavior extends Behavior
         /** @var ActiveRecord $model */
         $model = $this->owner;
 
-        $this->specialTypes = self::SPECIAL_TYPE;
+        $this->specialTypes = [
+            ...self::SPECIAL_TYPE,
+            ...$this->specialTypes,
+        ];
 
         foreach ($this->attributes as $attribute => $type) {
             if (is_array($type) === true) {
@@ -181,26 +221,40 @@ class ORMBehavior extends Behavior
 
                 switch ($type['scope']) {
                     case TypeScope::VALUE_OBJECT_TYPE:
-                        if (static::isImplement(ValueObjectInterface::class, $type['type']) === false) {
+                    case ValueObjectHandler::class:
+                        if ($this->isImplement(ValueObjectInterface::class, $type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'Value object type is not implement ValueObjectInterface.'
                             );
                         }
 
-                        $this->handlers[] = new ValueObjectHandler($model, $attribute, $type['type']);
+                        $this->handlers[] = new ValueObjectHandler(
+                            $model,
+                            $attribute,
+                            $type['type'],
+                            ($type['skipIfNull'] ?? true),
+                            ($type['reference'] ?? null)
+                        );
                         break;
 
                     case TypeScope::FLAT_TYPE:
-                        if (static::isImplement(FlatInterface::class, $type['type']) === false) {
+                    case FlatTypeHandler::class:
+                        if ($this->isImplement(FlatInterface::class, $type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'Flat type is not implement FlatInterface.'
                             );
                         }
 
-                        $this->handlers[] = new FlatTypeHandler($model, $attribute, $type['type']);
+                        $this->handlers[] = new FlatTypeHandler(
+                            $model,
+                            $attribute,
+                            $type['type'],
+                            ($type['reference'] ?? null)
+                        );
                         break;
 
                     case TypeScope::CONSTRUCTOR:
+                    case ConstructorHandler::class:
                         if (array_key_exists('type', $type) === false || class_exists($type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'The array must have a type for which you want to create a constructor.'
@@ -223,10 +277,12 @@ class ORMBehavior extends Behavior
                             $type['type'],
                             $type['params'],
                             $type['resolver'],
+                            ($type['nullIf'] ?? null)
                         );
                         break;
 
                     case TypeScope::YII_CREATE:
+                    case YiiCreateHandler::class:
                         if (array_key_exists('type', $type) === false || class_exists($type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'The array must have a type for which you want to create a Yii::create factory.'
@@ -253,32 +309,42 @@ class ORMBehavior extends Behavior
                         break;
 
                     case TypeScope::EMBEDDED:
+                    case EmbeddedHandler::class:
                         if (array_key_exists('type', $type) === false || class_exists($type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'The array must have a type for which you want to create a embedded class.'
                             );
                         }
 
-                        if (array_key_exists('mapper', $type) === false || is_array($type['mapper']) === false) {
+                        if (array_key_exists('map', $type) === false || is_array($type['map']) === false) {
                             throw new InvalidArgumentException(
                                 'You must populate the ActiveRecord property list with the Embedded class properties.'
                             );
                         }
 
-                        $this->handlers[] = new EmbeddedHandler($model, $attribute, $type['mapper'], $type['type']);
+                        $this->handlers[] = new EmbeddedHandler(
+                            $model,
+                            $attribute,
+                            $type['map'],
+                            $type['type'],
+                            ($type['nullIf'] ?? null),
+                            ($type['resolverIfNull'] ?? null),
+                        );
                         break;
 
                     case TypeScope::MAPPER:
-                        if (array_key_exists('mapper', $type) === false || is_array($type['mapper']) === false) {
+                    case MapperHandler::class:
+                        if (array_key_exists('map', $type) === false || is_array($type['map']) === false) {
                             throw new InvalidArgumentException(
                                 'You must populate the ActiveRecord property list with the mappers properties.'
                             );
                         }
 
-                        $this->handlers[] = new MapperHandler($model, $type['mapper']);
+                        $this->handlers[] = new MapperHandler($model, $type['map']);
                         break;
 
                     case TypeScope::EACH:
+                    case EachHandler::class:
                         if (array_key_exists('type', $type) === false || class_exists($type['type']) === false) {
                             throw new InvalidArgumentException(
                                 'The array must have a type for which you want to create a item class for each.'
@@ -299,7 +365,12 @@ class ORMBehavior extends Behavior
                         break;
 
                     default:
-                        throw new InvalidArgumentException('Scope has an invalid definition.');
+                        if ($this->isImplement(HandlerInterface::class, $type['scope']) === false) {
+                            throw new InvalidArgumentException('Scope has an invalid definition.');
+                        }
+
+                        $this->handlers[] = Yii::createObject($type['scope'], [$model, $attribute, $type]);
+                        break;
                 }//end switch
             } else {
                 if (class_exists($type) === true) {

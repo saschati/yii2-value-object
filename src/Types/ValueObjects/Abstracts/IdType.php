@@ -9,11 +9,15 @@ namespace Saschati\ValueObject\Types\ValueObjects\Abstracts;
 
 /**
  * Class Id
+ *
+ * An abstract identifier type for easy handling of identifiers regardless of their type.
  */
 abstract class IdType extends NativeType
 {
     /**
+     * An abstract method that should return a new instance of the identifier.
+     *
      * @return static
      */
-    public abstract static function new(): static;
+    abstract public static function new(): static;
 }

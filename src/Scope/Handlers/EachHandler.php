@@ -8,13 +8,18 @@
 namespace Saschati\ValueObject\Scope\Handlers;
 
 use InvalidArgumentException;
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use yii\db\ActiveRecordInterface;
 
+use function array_map;
+use function sprintf;
+
 /**
- * Class MapperHandler
+ * Class EachHandler
+ *
+ * This Handler processes an array of values that are found by the attribute key or the "reference" value,
+ * where the reference can be either a virtual type, a type from the db, or an object property.
  *
  * 'attributeOrProperty' => [
  *    'scope'     => TypeScope::EACH,
@@ -22,7 +27,7 @@ use yii\db\ActiveRecordInterface;
  *    'reference' => 'attribute',
  * ]
  */
-class EachHandler implements HandlerInterface
+class EachHandler extends AbstractHandler
 {
     public const TYPE_VO   = 'vo';
     public const TYPE_FLAT = 'flat';
@@ -49,15 +54,10 @@ class EachHandler implements HandlerInterface
      */
     public function cast(): void
     {
-        $model     = $this->model;
-        $attribute = $this->attribute;
-        $reference = $this->reference;
-        $class     = $this->class;
-        $type      = $this->type;
+        $class = $this->class;
+        $type  = $this->type;
 
-        $items = $model->{($reference ?? $attribute)};
-
-        $model->{$attribute} = array_map(
+        $items = array_map(
             static function (mixed $item) use ($class, $type) {
                 if ($type === static::TYPE_VO) {
                     if ($item === null) {
@@ -85,8 +85,10 @@ class EachHandler implements HandlerInterface
                     )
                 );
             },
-            $items
+            ($this->getValue() ?? [])
         );
+
+        $this->setAttribute($this->getModel(), $this->attribute, $items);
     }
 
     /**
@@ -94,15 +96,10 @@ class EachHandler implements HandlerInterface
      */
     public function normalize(): void
     {
-        $model     = $this->model;
-        $attribute = $this->attribute;
-        $reference = $this->reference;
-        $class     = $this->class;
-        $type      = $this->type;
+        $class = $this->class;
+        $type  = $this->type;
 
-        $items = $model->{$attribute};
-
-        $model->{($reference ?? $attribute)} = array_map(
+        $items = array_map(
             static function (mixed $item) use ($class, $type) {
                 if ($type === static::TYPE_VO) {
                     if ($item === null) {
@@ -130,7 +127,25 @@ class EachHandler implements HandlerInterface
                     )
                 );
             },
-            $items
+            ($this->getAttribute($this->getModel(), $this->attribute) ?? [])
         );
+
+        $this->setValue($items);
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return ($this->reference ?? $this->attribute);
     }
 }

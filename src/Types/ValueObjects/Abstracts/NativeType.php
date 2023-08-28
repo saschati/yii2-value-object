@@ -12,13 +12,15 @@ use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 
 /**
  * Class NativeType
+ *
+ * An abstract native type for a convenient Value Object implementation on a single value.
  */
 abstract class NativeType implements ValueObjectInterface
 {
     /**
      * @var mixed
      */
-    protected $value;
+    protected mixed $value;
 
 
     /**

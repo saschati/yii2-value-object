@@ -11,6 +11,8 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class BooleanType
+ *
+ * Converting a value to a boolean.
  */
 class BooleanType implements FlatInterface
 {

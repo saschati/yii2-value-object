@@ -11,6 +11,8 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class IntegerType
+ *
+ * Converting a value to an int.
  */
 class IntegerType implements FlatInterface
 {

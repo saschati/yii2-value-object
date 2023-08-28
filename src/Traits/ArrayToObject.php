@@ -12,8 +12,12 @@ namespace Saschati\ValueObject\Traits;
 use Yii;
 use yii\base\InvalidConfigException;
 
+use function property_exists;
+
 /**
  * Trait ArrayToObject
+ *
+ * Conversion array into an object.
  */
 trait ArrayToObject
 {
@@ -29,6 +33,7 @@ trait ArrayToObject
         $object = Yii::createObject(static::class);
 
         $mapper = (function ($data) {
+            // phpcs:ignore Squiz.Scope.StaticThisUsage.Found
             $object = $this;
 
             foreach ($data as $key => $value) {

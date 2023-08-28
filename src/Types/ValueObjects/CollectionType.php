@@ -13,51 +13,48 @@ use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use Saschati\ValueObject\Utils\Collection;
 use yii\db\Expression;
 
+use function array_key_exists;
+use function array_map;
+use function class_exists;
+use function class_implements;
+use function in_array;
+
 /**
  * Class CollectionType
+ *
+ * Value Object implementation of the collection type for working with arrays
+ * with different data, by default the collection type is 'mixed'.
  */
 class CollectionType extends Collection implements ValueObjectInterface
 {
     /**
+     * The collection type that will be passed to the constructor
+     * of this collection, if the collection type is VO or FT,
+     * then the corresponding method will be called for each element of
+     * the collection by receiving from the DB and before saving to the DB.
+     *
      * @var string|ValueObjectInterface|FlatInterface
      */
     protected static string $type = 'mixed';
 
     /**
+     * List of implementations for caching.
+     *
      * @var array
      */
     protected static array $classImplements = [];
 
+
     /**
-     * @param string|mixed|null $value
+     * Constructs a collection object of the specified type, optionally with the
+     * specified data.
      *
-     * @return static
+     * @param array       $data           The initial items to store in the collection.
+     * @param string|null $collectionType The type (FQCN) associated with this collection.
      */
-    public static function convertToObjectValue(mixed $value): static
+    public function __construct(array $data = [], string $collectionType = null)
     {
-        $json = JsonType::convertToPhpValue($value);
-
-        $json = array_map([static::class, 'preparedItemToObject'], ($json ?? []));
-
-        return new static(static::$type, $json);
-    }
-
-    /**
-     * @return Expression|null
-     */
-    public function convertToDatabaseValue(): ?Expression
-    {
-        $collection = array_map([$this, 'preparedItemToDatabase'], $this->toArray());
-
-        return JsonType::convertToDatabaseValue(($collection === []) ? null : $collection);
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->convertToDatabaseValue()->expression;
+        parent::__construct(($collectionType ?? static::$type), $data);
     }
 
     /**
@@ -108,6 +105,38 @@ class CollectionType extends Collection implements ValueObjectInterface
         }
 
         return $item;
+    }
+
+    /**
+     * @param string|mixed|null $value
+     *
+     * @return static
+     */
+    public static function convertToObjectValue(mixed $value): static
+    {
+        $json = JsonType::convertToPhpValue($value);
+
+        $json = array_map([static::class, 'preparedItemToObject'], ($json ?? []));
+
+        return new static($json, static::$type);
+    }
+
+    /**
+     * @return Expression|null
+     */
+    public function convertToDatabaseValue(): ?Expression
+    {
+        $collection = array_map([$this, 'preparedItemToDatabase'], $this->toArray());
+
+        return JsonType::convertToDatabaseValue(($collection === []) ? null : $collection);
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->convertToDatabaseValue()->expression;
     }
 
     /**

@@ -10,6 +10,8 @@ namespace Saschati\ValueObject\Utils;
 use Ramsey\Collection\Collection as BaseCollection;
 use Ramsey\Collection\Exception\InvalidArgumentException;
 
+use function sprintf;
+
 /**
  * Class Collection
  *
@@ -41,5 +43,26 @@ class Collection extends BaseCollection
         ];
 
         return true;
+    }
+
+    /**
+     * Filter the elements of the collection, and returns the first one found, otherwise null.
+     *
+     * See the {@link http://php.net/manual/en/function.array-filter.php PHP array_filter() documentation}
+     * for examples of how the `$callback` parameter works.
+     *
+     * @param callable(T):bool $callback A callable to use for filtering elements.
+     *
+     * @return T|null
+     */
+    public function find(callable $callback): mixed
+    {
+        $collection = $this->filter($callback);
+
+        if ($collection->isEmpty() === true) {
+            return null;
+        }
+
+        return $collection->first();
     }
 }

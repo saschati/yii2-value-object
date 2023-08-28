@@ -7,7 +7,6 @@
 
 namespace Saschati\ValueObject\Scope\Handlers;
 
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 use yii\db\ActiveRecordInterface;
 
@@ -15,19 +14,28 @@ use yii\db\ActiveRecordInterface;
  * Class FlatTypeHandler
  *
  * This field serves as the content of all fields of special types
- * of the model which uses it with value 'attribute' => 'Type'.
+ * of the model which uses it with value:
+ * 'attribute' => SomeClass::class
+ * or
+ * 'attributeOrProperty' => [
+ *    'scope'     => TypeScope::FLAT_TYPE,
+ *    'type'      => SomeClass::class,
+ *    'reference' => 'attribute',
+ * ]
  */
-class FlatTypeHandler implements HandlerInterface
+class FlatTypeHandler extends AbstractHandler
 {
     /**
      * @param ActiveRecordInterface $model
      * @param string                $attribute
      * @param string|FlatInterface  $type
+     * @param string|null           $reference
      */
     public function __construct(
         private readonly ActiveRecordInterface $model,
         private readonly string $attribute,
-        private readonly string $type
+        private readonly string $type,
+        private readonly ?string $reference = null,
     ) {
     }
 
@@ -36,16 +44,16 @@ class FlatTypeHandler implements HandlerInterface
      */
     public function cast(): void
     {
-        $value = $this->model->{$this->attribute};
+        $value = $this->getValue();
         if ($value === null) {
-            $this->model->{$this->attribute} = null;
+            $this->setAttribute($this->getModel(), $this->attribute, null);
 
             return;
         }
 
         $type = $this->type;
 
-        $this->model->{$this->attribute} = $type::convertToPhpValue($value);
+        $this->setAttribute($this->getModel(), $this->attribute, $type::convertToPhpValue($value));
     }
 
     /**
@@ -55,6 +63,22 @@ class FlatTypeHandler implements HandlerInterface
     {
         $type = $this->type;
 
-        $this->model->{$this->attribute} = $type::convertToDatabaseValue($this->model->{$this->attribute});
+        $this->setValue($type::convertToDatabaseValue($this->getAttribute($this->getModel(), $this->attribute)));
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return ($this->reference ?? $this->attribute);
     }
 }

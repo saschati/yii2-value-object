@@ -7,22 +7,24 @@
 
 namespace Saschati\ValueObject\Scope\Handlers;
 
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use yii\db\ActiveRecordInterface;
 
 /**
  * Class MapperHandler
  *
+ * This handler exists for direct property mapping, useful if you need to create a
+ * true private property for an entity from an attribute.
+ *
  * 'mapper' => [
  *    'scope'  => TypeScope::MAPPER,
- *    'mapper' => [
+ *    'map'    => [
  *       'property1' => 'attribute1',
  *       'property2' => 'attribute2',
  *       ...
  *    ]
  * ]
  */
-class MapperHandler implements HandlerInterface
+class MapperHandler extends AbstractHandler
 {
     /**
      * @param ActiveRecordInterface $model
@@ -41,13 +43,14 @@ class MapperHandler implements HandlerInterface
     {
         $attributes = $this->attributes;
 
-        $mapper = (function () use ($attributes) {
+        $mapper = (function (AbstractHandler $them) use ($attributes) {
+            /** @var ActiveRecordInterface $this */
             foreach ($attributes as $property => $attribute) {
-                $this->{$property} = $this->{$attribute};
+                $them->setAttribute($this, $property, $them->getAttribute($this, $attribute));
             }
         })(...);
 
-        $mapper->call($this->model);
+        $mapper->call($this->getModel(), $this);
     }
 
     /**
@@ -57,12 +60,29 @@ class MapperHandler implements HandlerInterface
     {
         $attributes = $this->attributes;
 
-        $mapper = (function () use ($attributes) {
+        $mapper = (function (AbstractHandler $them) use ($attributes) {
+            /** @var ActiveRecordInterface $this */
             foreach ($attributes as $property => $attribute) {
-                $this->{$attribute} = $this->{$property};
+                $them->setAttribute($this, $attribute, $them->getAttribute($this, $property));
             }
         })(...);
 
-        $mapper->call($this->model);
+        $mapper->call($this->getModel(), $this);
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return '';
     }
 }

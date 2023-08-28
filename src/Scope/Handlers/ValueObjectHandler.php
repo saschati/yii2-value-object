@@ -7,7 +7,6 @@
 
 namespace Saschati\ValueObject\Scope\Handlers;
 
-use Saschati\ValueObject\Scope\Handlers\Interfaces\HandlerInterface;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use yii\db\ActiveRecordInterface;
 
@@ -15,19 +14,31 @@ use yii\db\ActiveRecordInterface;
  * Class ValueObjectHandler
  *
  * This field serves as the content of all fields of the value object
- * model that uses it with the value 'attribute' => 'Type'.
+ * model that uses it with the value:
+ * 'attribute' => 'Type'
+ * or
+ * 'attributeOrProperty' => [
+ *    'scope'      => TypeScope::VALUE_OBJECT_TYPE,
+ *    'type'       => SomeClass::class,
+ *    'skipIfNull' => true,
+ *    'reference'  => 'attribute',
+ * ]
  */
-class ValueObjectHandler implements HandlerInterface
+class ValueObjectHandler extends AbstractHandler
 {
     /**
      * @param ActiveRecordInterface       $model
      * @param string                      $attribute
      * @param string|ValueObjectInterface $type
+     * @param boolean                     $skipIfNull
+     * @param string|null                 $reference
      */
     public function __construct(
         private readonly ActiveRecordInterface $model,
         private readonly string $attribute,
-        private readonly string $type
+        private readonly string $type,
+        private readonly bool $skipIfNull = true,
+        private readonly ?string $reference = null,
     ) {
     }
 
@@ -36,16 +47,16 @@ class ValueObjectHandler implements HandlerInterface
      */
     public function cast(): void
     {
-        $value = $this->model->{$this->attribute};
-        if ($value === null) {
-            $this->model->{$this->attribute} = null;
+        $value = $this->getValue();
+        if ($value === null && $this->skipIfNull === true) {
+            $this->setAttribute($this->getModel(), $this->attribute, null);
 
             return;
         }
 
         $type = $this->type;
 
-        $this->model->{$this->attribute} = $type::convertToObjectValue($value);
+        $this->setAttribute($this->getModel(), $this->attribute, $type::convertToObjectValue($value));
     }
 
     /**
@@ -53,6 +64,22 @@ class ValueObjectHandler implements HandlerInterface
      */
     public function normalize(): void
     {
-        $this->model->{$this->attribute} = $this->model->{$this->attribute}?->convertToDatabaseValue();
+        $this->setValue($this->getAttribute($this->getModel(), $this->attribute)?->convertToDatabaseValue());
+    }
+
+    /**
+     * @return ActiveRecordInterface
+     */
+    protected function getModel(): ActiveRecordInterface
+    {
+        return $this->model;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getProperty(): string
+    {
+        return ($this->reference ?? $this->attribute);
     }
 }

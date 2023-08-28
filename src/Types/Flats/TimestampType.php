@@ -14,11 +14,15 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class TimestampType
+ *
+ * Conversion of timestamp to DateTimeImmutable.
+ *
+ * @see DateTimeImmutable
  */
 class TimestampType implements FlatInterface
 {
     /**
-     * @param string $value
+     * @param string|mixed $value
      *
      * @return DateTimeInterface|null
      *

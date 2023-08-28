@@ -7,17 +7,50 @@
 
 namespace Saschati\ValueObject\Helpers;
 
+use Saschati\ValueObject\Types\Flats\BooleanType;
+use Saschati\ValueObject\Types\Flats\FloatType;
+use Saschati\ValueObject\Types\Flats\IntegerType;
+use Saschati\ValueObject\Types\Flats\JsonType;
+use Saschati\ValueObject\Types\Flats\SerializedType;
+use Saschati\ValueObject\Types\Flats\StringType;
+use Saschati\ValueObject\Types\Flats\TimestampIntegerType;
+use Saschati\ValueObject\Types\Flats\TimestampType;
+
 /**
  * Class Flat
  */
 class Flat
 {
-    public const BOOLEAN_TYPE           = 'boolean';
-    public const INTEGER_TYPE           = 'integer';
-    public const STRING_TYPE            = 'string';
-    public const FLOAT_TYPE             = 'float';
-    public const JSON_TYPE              = 'json';
-    public const TIMESTAMP_TYPE         = 'timestamp';
-    public const TIMESTAMP_INTEGER_TYPE = 'timestampInteger';
-    public const SERIALIZE_TYPE         = 'serialized';
+    /**
+     * @see BooleanType
+     */
+    public const BOOLEAN_TYPE = 'boolean';
+    /**
+     * @see IntegerType
+     */
+    public const INTEGER_TYPE = 'integer';
+    /**
+     * @see StringType
+     */
+    public const STRING_TYPE = 'string';
+    /**
+     * @see FloatType
+     */
+    public const FLOAT_TYPE = 'float';
+    /**
+     * @see JsonType
+     */
+    public const JSON_TYPE = 'json';
+    /**
+     * @see TimestampType
+     */
+    public const TIMESTAMP_TYPE = 'timestamp';
+    /**
+     * @see TimestampIntegerType
+     */
+    public const TIMESTAMP_INTEGER_TYPE = 'timestamp:integer';
+    /**
+     * @see SerializedType
+     */
+    public const SERIALIZE_TYPE = 'serialized';
 }

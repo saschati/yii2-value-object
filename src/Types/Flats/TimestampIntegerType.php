@@ -7,7 +7,6 @@
 
 namespace Saschati\ValueObject\Types\Flats;
 
-use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
@@ -15,11 +14,15 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class TimestampIntegerType
+ *
+ * Converting an integer to a DateTimeImmutable.
+ *
+ * @see DateTimeImmutable
  */
 class TimestampIntegerType implements FlatInterface
 {
     /**
-     * @param integer $value
+     * @param integer|mixed $value
      *
      * @return DateTimeInterface|null
      *
@@ -35,7 +38,7 @@ class TimestampIntegerType implements FlatInterface
     }
 
     /**
-     * @param DateTime $value
+     * @param DateTimeInterface|mixed $value
      *
      * @return integer|null
      */

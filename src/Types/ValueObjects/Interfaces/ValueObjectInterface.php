@@ -9,6 +9,8 @@ namespace Saschati\ValueObject\Types\ValueObjects\Interfaces;
 
 /**
  * Interface ValueObjectInterface
+ *
+ * Interface for which Value Object can be implemented for compatibility with this library.
  */
 interface ValueObjectInterface
 {

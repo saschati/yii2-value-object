@@ -13,6 +13,8 @@ use ReflectionClass;
 
 /**
  * Class ObjectToArray
+ *
+ * Converting an object to an array.
  */
 trait ObjectToArray
 {

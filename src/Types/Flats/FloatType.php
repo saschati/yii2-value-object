@@ -11,6 +11,8 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
  * Class FloatType
+ *
+ * Converting a value to a float.
  */
 class FloatType implements FlatInterface
 {

@@ -10,8 +10,17 @@ namespace Saschati\ValueObject\Types\Flats;
 use RuntimeException;
 use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
+use function json_decode;
+use function json_last_error;
+use function json_last_error_msg;
+use function quoted_printable_decode;
+use function serialize;
+use function unserialize;
+
 /**
  * Class ClassConservativeType
+ *
+ * Serialization and deserialization of values from DB.
  */
 class SerializedType implements FlatInterface
 {
@@ -37,7 +46,10 @@ class SerializedType implements FlatInterface
         /**
          * @var array $val
          */
-        $val = unserialize(quoted_printable_decode((string)json_decode($value, true)));
+        $val = unserialize(
+            quoted_printable_decode((string)json_decode($value, true)),
+            ['allowed_classes' => true]
+        );
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new RuntimeException(json_last_error_msg());

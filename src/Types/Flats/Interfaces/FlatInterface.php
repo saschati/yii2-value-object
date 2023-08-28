@@ -9,6 +9,8 @@ namespace Saschati\ValueObject\Types\Flats\Interfaces;
 
 /**
  * Interface FlatInterface
+ *
+ * Interface to implement flat types with two static methods before saving to DB and after getting data from DB.
  */
 interface FlatInterface
 {
