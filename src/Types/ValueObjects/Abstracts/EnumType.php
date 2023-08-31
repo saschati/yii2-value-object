@@ -11,8 +11,6 @@ use InvalidArgumentException;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use MabeEnum\Enum as BaseEnum;
 
-use function strtolower;
-
 /**
  * Class EnumType
  *
@@ -25,7 +23,7 @@ abstract class EnumType extends BaseEnum implements ValueObjectInterface
      *
      * @return static
      */
-    public static function convertToObjectValue($value): static
+    public static function convertToObjectValue(mixed $value): static
     {
         return static::get($value);
     }
@@ -43,16 +41,16 @@ abstract class EnumType extends BaseEnum implements ValueObjectInterface
      *
      * @param mixed $value
      *
-     * @return BaseEnum|null
+     * @return static|null
      */
-    public static function tryFrom(mixed $value): ?BaseEnum
+    public static function tryFrom(mixed $value): ?static
     {
         if ($value === null) {
             return null;
         }
 
         try {
-            return parent::get($value);
+            return static::get($value);
         } catch (InvalidArgumentException) {
             return null;
         }
@@ -63,11 +61,11 @@ abstract class EnumType extends BaseEnum implements ValueObjectInterface
      *
      * @param mixed $value
      *
-     * @return BaseEnum
+     * @return static
      */
-    public static function from(mixed $value): BaseEnum
+    public static function from(mixed $value): static
     {
-        return parent::get($value);
+        return static::get($value);
     }
 
     /**
