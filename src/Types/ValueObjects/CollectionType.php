@@ -11,7 +11,6 @@ use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 use Saschati\ValueObject\Types\Flats\JsonType;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use Saschati\ValueObject\Utils\Collection;
-use yii\db\Expression;
 
 use function array_key_exists;
 use function array_map;
@@ -114,29 +113,27 @@ class CollectionType extends Collection implements ValueObjectInterface
      */
     public static function convertToObjectValue(mixed $value): static
     {
-        $json = JsonType::convertToPhpValue($value);
+        $array = array_map([static::class, 'preparedItemToObject'], ($value ?? []));
 
-        $json = array_map([static::class, 'preparedItemToObject'], ($json ?? []));
-
-        return new static($json, static::$type);
+        return new static($array, static::$type);
     }
 
     /**
-     * @return Expression|null
+     * @return array|null
      */
-    public function convertToDatabaseValue(): ?Expression
+    public function convertToDatabaseValue(): ?array
     {
         $collection = array_map([$this, 'preparedItemToDatabase'], $this->toArray());
 
-        return JsonType::convertToDatabaseValue(($collection === []) ? null : $collection);
+        return ($collection === []) ? null : $collection;
     }
 
     /**
      * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
-        return $this->convertToDatabaseValue()->expression;
+        return (string)JsonType::convertToDatabaseValue($this->convertToDatabaseValue());
     }
 
     /**

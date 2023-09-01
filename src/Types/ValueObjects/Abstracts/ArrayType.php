@@ -12,7 +12,6 @@ use Saschati\ValueObject\Traits\ObjectToArray;
 use Saschati\ValueObject\Types\Flats\JsonType;
 use Saschati\ValueObject\Types\ValueObjects\Interfaces\ValueObjectInterface;
 use yii\base\InvalidConfigException;
-use yii\db\Expression;
 
 use function array_filter;
 
@@ -21,7 +20,6 @@ use function array_filter;
  *
  * Array type that assigns a flat mapper for array elements with 1 property to 1 key in the array.
  *
- * @see ArrayType::toJson() Specifies whether to convert the array to JSON at the stage of saving or retrieving data.
  * @see ArrayType::isClear() Determines whether to clear the array of null values before saving to the DB.
  */
 abstract class ArrayType implements ValueObjectInterface
@@ -31,7 +29,7 @@ abstract class ArrayType implements ValueObjectInterface
 
 
     /**
-     * @param mixed $value
+     * @param mixed|null|array $value
      *
      * @return static|null
      *
@@ -39,23 +37,19 @@ abstract class ArrayType implements ValueObjectInterface
      */
     public static function convertToObjectValue(mixed $value): ?static
     {
-        $json = JsonType::convertToPhpValue($value);
-
-        if ($json === null) {
+        if ($value === null) {
             return null;
         }
 
-        return static::createFromArray($json);
+        return static::createFromArray($value);
     }
 
     /**
-     * @return array|Expression|null
+     * @return array
      */
-    public function convertToDatabaseValue(): array|Expression|null
+    public function convertToDatabaseValue(): array
     {
-        $array = ($this->isClear() === true) ? array_filter($this->toArray()) : $this->toArray();
-
-        return ($this->toJson() === true) ? JsonType::convertToDatabaseValue($array) : $array;
+        return ($this->isClear() === true) ? array_filter($this->toArray()) : $this->toArray();
     }
 
     /**
@@ -63,19 +57,7 @@ abstract class ArrayType implements ValueObjectInterface
      */
     public function __toString(): string
     {
-        $array = ($this->isClear() === true) ? array_filter($this->toArray()) : $this->toArray();
-
-        return JsonType::convertToDatabaseValue($array)->expression;
-    }
-
-    /**
-     * Specifies whether to convert the array to JSON at the stage of saving or retrieving data.
-     *
-     * @return boolean
-     */
-    protected function toJson(): bool
-    {
-        return true;
+        return (string)JsonType::convertToDatabaseValue($this->convertToDatabaseValue());
     }
 
     /**
