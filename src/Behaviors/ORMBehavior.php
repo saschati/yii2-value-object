@@ -57,6 +57,8 @@ class ORMBehavior extends Behavior
         Flat::TIMESTAMP_TYPE         => Flats\TimestampType::class,
         Flat::TIMESTAMP_INTEGER_TYPE => Flats\TimestampIntegerType::class,
         Flat::SERIALIZE_TYPE         => Flats\SerializedType::class,
+        Flat::DATE_TYPE              => Flats\DateType::class,
+        Flat::DATE_TIME_TYPE         => Flats\DateTimeType::class,
     ];
 
     /**

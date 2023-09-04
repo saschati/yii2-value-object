@@ -8,6 +8,8 @@
 namespace Saschati\ValueObject\Helpers;
 
 use Saschati\ValueObject\Types\Flats\BooleanType;
+use Saschati\ValueObject\Types\Flats\DateTimeType;
+use Saschati\ValueObject\Types\Flats\DateType;
 use Saschati\ValueObject\Types\Flats\FloatType;
 use Saschati\ValueObject\Types\Flats\IntegerType;
 use Saschati\ValueObject\Types\Flats\JsonType;
@@ -53,4 +55,12 @@ class Flat
      * @see SerializedType
      */
     public const SERIALIZE_TYPE = 'serialized';
+    /**
+     * @see DateType
+     */
+    public const DATE_TYPE = 'date';
+    /**
+     * @see DateTimeType
+     */
+    public const DATE_TIME_TYPE = 'datetime';
 }

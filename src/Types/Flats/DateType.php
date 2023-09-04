@@ -13,13 +13,13 @@ use Exception;
 use Saschati\ValueObject\Types\Flats\Interfaces\FlatInterface;
 
 /**
- * Class TimestampType
+ * Class DateType
  *
- * Conversion of timestamp to DateTimeImmutable.
+ * Converting an date to a DateTimeImmutable.
  *
  * @see DateTimeImmutable
  */
-class TimestampType implements FlatInterface
+class DateType implements FlatInterface
 {
     /**
      * @param string|mixed $value
@@ -34,7 +34,7 @@ class TimestampType implements FlatInterface
             return null;
         }
 
-        return DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $value);
+        return DateTimeImmutable::createFromFormat('!Y-m-d', $value);
     }
 
     /**
@@ -42,8 +42,8 @@ class TimestampType implements FlatInterface
      *
      * @return string|null
      */
-    public static function convertToDatabaseValue(mixed $value): ?string
+    public static function convertToDatabaseValue($value): ?string
     {
-        return $value?->format('Y-m-d H:i:s');
+        return $value?->format('Y-m-d');
     }
 }

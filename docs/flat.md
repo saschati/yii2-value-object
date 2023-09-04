@@ -60,6 +60,8 @@ The list of available classes can be found at the [link](../src/Types/Flats).
 | [string](../src/Types/Flats/StringType.php)                      | Convert database value in php string                                                                                       |
 | [timestamp](../src/Types/Flats/TimestampType.php)                | Convert database value as timestamp in php [\DateTimeImmutable](https://www.php.net/manual/ru/class.datetimeimmutable.php) |
 | [timestamp:integer](../src/Types/Flats/TimestampIntegerType.php) | Convert database value as integer in php [\DateTimeImmutable](https://www.php.net/manual/ru/class.datetimeimmutable.php)   |
+| [date](../src/Types/Flats/TimestampType.php)                     | Convert database value as date in php [\DateTimeImmutable](https://www.php.net/manual/ru/class.datetimeimmutable.php)      |
+| [datetime](../src/Types/Flats/TimestampIntegerType.php)          | Convert database value as datetime in php [\DateTimeImmutable](https://www.php.net/manual/ru/class.datetimeimmutable.php)  |
 | [serialized](../src/Types/Flats/SerializedType.php)              | Convert database value as canned object in php object                                                                      |
 
 Create custom FlatType
